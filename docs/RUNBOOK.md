@@ -272,12 +272,39 @@ variables → Actions → Variables — they're plain hostnames, not secrets):
 |---|---|---|
 | `UPTIME_MAINNET_API_URL` | **set this once `quay-api-mainnet` exists** | e.g. `https://quay-api-mainnet.onrender.com` (`render.mainnet.yaml`'s `quay-api-mainnet`). Unset means mainnet is skipped entirely, not silently checked against the testnet URL. |
 | `UPTIME_MAINNET_WEB_URL` | optional | Only set this if a dedicated mainnet web deployment exists. `render.mainnet.yaml` declares no web service today, so leave unset until one does. |
-| `UPTIME_MAINNET_SYNTHETIC_CHECK` | optional, default off | Set to `1` to also POST a throwaway `/links` synthetic check against mainnet, same as testnet already does. Left off by default: it would write a real row into the production database on every successful run. It authenticates with the repository secret `UPTIME_MAINNET_API_KEY` (a least-privilege API key, issue 8.9 / #163, same as `UPTIME_API_KEY` on testnet), so create that key and set the secret before turning this on. |
+| `UPTIME_MAINNET_SYNTHETIC_CHECK` | optional, default off | Set to `1` to also POST a throwaway `/links` synthetic **write** check against mainnet, same as testnet already does. Left off by default: it would write a real row into the production database on every successful run. When on, it reports under `mainnet-synthetic-write` so its history never mixes with the read probe's. It reuses `UPTIME_MAINNET_API_KEY`, which then needs `links:read` **and** `links:write` (plus the ability to cancel) — see the key procedure below. |
+
+`UPTIME_MAINNET_API_KEY` is a repository **secret**, not a variable. Create it
+as follows (issue 8.27 / #526 — the contributor who wrote the probe cannot do
+this, only the repo owner can):
+
+1. Sign in to the mainnet dashboard and open **API keys → Create**.
+2. Name it `uptime-read` and grant exactly the `links:read` scope. Nothing
+   else: this key is only ever used for `GET /links?limit=1`.
+3. Copy the key — it is shown once — and add it under **Settings → Secrets and
+   variables → Actions → Secrets** as `UPTIME_MAINNET_API_KEY`.
+
+**The read-only probe (`mainnet-synthetic`) is on by default** once
+`UPTIME_MAINNET_API_URL` is set, and it is the one check that proves the
+production authenticated path without touching data: it sends
+`GET /links?limit=1` with the key above and expects `200`. `GET /links` accepts
+any authenticated seller, so `links:read` alone is enough. Nothing is created,
+cancelled or written.
+
+**A missing or rejected key.** If `UPTIME_MAINNET_API_KEY` is unset, the probe
+reports **`NOT CONFIGURED`** in the workflow log and records nothing — no failure,
+no dropped uptime percentage, no incident issue. That is deliberate: a missing
+secret is a configuration gap, not an outage, and reporting it as downtime
+(the old behaviour, when the check merely 401'd) produced a permanently red
+badge for a credential nobody had created. A key that *is* configured but
+rejected with `401` is a real failure: the key was revoked, lost its
+`links:read` scope, or belongs to another environment.
 
 Both environments are watched at once, on the same schedule, with separate
 history series — a green testnet can never stand in for an unmonitored mainnet.
 Testnet keeps the unprefixed target ids (`api` / `web` / `synthetic`); mainnet's
-are prefixed (`mainnet-api` / `mainnet-web` / `mainnet-synthetic`).
+are prefixed (`mainnet-api` / `mainnet-web` / `mainnet-synthetic` /
+`mainnet-synthetic-write`).
 
 Once `UPTIME_MAINNET_API_URL` is set, the next run adds a `## Mainnet`
 section to `docs/STATUS.md` and starts filing incidents titled
@@ -1052,30 +1079,3 @@ Per NDPA Section 38, notify:
 2. **Affected Sellers** (if high risk):
    - Email with: description of breach, likely consequences, measures taken/advise to mitigate, contact for more info
    - Template: "We detected unauthorized access to your [data categories] on [date]. We have [actions taken]. You should [recommended steps]. Contact [email] for questions."
-
-3. **Anchor(s)** (if their data was involved):
-   - Notify anchor's security/contact per their DPA/agreement
-
-4. **Hosting/DB Providers** (Render, Turso):
-   - Per DPA obligations; they may have their own notification duties
-
-### 4. Document
-
-- Record in incident log (date, scope, root cause, actions, notifications sent)
-- Link to `docs/PRIVACY.md` breach handling section
-- Update `docs/PRIVACY.md` if material changes to data map or notice
-
-### 5. Rotate Related Secrets (as needed)
-
-- `WEBHOOK_SECRET_ENCRYPTION_KEY` (if webhook payloads exposed)
-- `JWT_SECRET` (if session tokens exposed)
-- `SERVER_SIGNING_SECRET` (if signing key exposed)
-- `WEBHOOK_SECRET_ENCRYPTION_KEY` rotation: it has no previous-key slot, so follow the "Key rotation" section above (sellers re-issue webhook secrets and reconnect to the anchor)
-
-### 6. Follow-up
-
-- [ ] Root cause analysis
-- [ ] Implement mitigations (code, config, process)
-- [ ] Update `docs/PRIVACY.md` if data map changed
-- [ ] Conduct post-incident review within 14 days
-- [ ] Report to board/management per internal policy
