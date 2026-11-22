@@ -81,6 +81,13 @@ docs:check-env-docs` keeps it in step with the code.
 
 ### Added
 
+- The network a deployment settles on is now stated on the checkout masthead,
+  the dashboard, the link detail header and the demo page: `Mainnet`, or
+  `Testnet: no real money`. On mainnet the demo storefront keeps the product
+  and the integration snippet but explains that the live widget needs a real
+  payment link (with a link to the dashboard) instead of showing a dead button
+  and a `pnpm demo:seed` hint. The landing links now say what `/demo` is.
+
 - Seller anchor session routes under `/seller/anchor-auth`, and SEP-10
   `client_domain` co-signing (`b1fa907`).
 - Seller-signed cash-out transfer step in the dashboard, a SEP-7 pay URI and QR
