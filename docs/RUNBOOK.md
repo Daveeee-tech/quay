@@ -1079,3 +1079,30 @@ Per NDPA Section 38, notify:
 2. **Affected Sellers** (if high risk):
    - Email with: description of breach, likely consequences, measures taken/advise to mitigate, contact for more info
    - Template: "We detected unauthorized access to your [data categories] on [date]. We have [actions taken]. You should [recommended steps]. Contact [email] for questions."
+
+3. **Anchor(s)** (if their data was involved):
+   - Notify anchor's security/contact per their DPA/agreement
+
+4. **Hosting/DB Providers** (Render, Turso):
+   - Per DPA obligations; they may have their own notification duties
+
+### 4. Document
+
+- Record in incident log (date, scope, root cause, actions, notifications sent)
+- Link to `docs/PRIVACY.md` breach handling section
+- Update `docs/PRIVACY.md` if material changes to data map or notice
+
+### 5. Rotate Related Secrets (as needed)
+
+- `WEBHOOK_SECRET_ENCRYPTION_KEY` (if webhook payloads exposed)
+- `JWT_SECRET` (if session tokens exposed)
+- `SERVER_SIGNING_SECRET` (if signing key exposed)
+- `WEBHOOK_SECRET_ENCRYPTION_KEY` rotation: it has no previous-key slot, so follow the "Key rotation" section above (sellers re-issue webhook secrets and reconnect to the anchor)
+
+### 6. Follow-up
+
+- [ ] Root cause analysis
+- [ ] Implement mitigations (code, config, process)
+- [ ] Update `docs/PRIVACY.md` if data map changed
+- [ ] Conduct post-incident review within 14 days
+- [ ] Report to board/management per internal policy
