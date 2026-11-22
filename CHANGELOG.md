@@ -145,6 +145,13 @@ docs:check-env-docs` keeps it in step with the code.
 
 ### Fixed
 
+- Uptime checks no longer report a missing API key as downtime. Mainnet gets a
+  read-only authenticated probe (`mainnet-synthetic`: `GET /links?limit=1` with
+  a `links:read` key), and a probe whose key is not configured reports
+  `NOT CONFIGURED` and leaves its uptime figure and badges untouched. The
+  synthetic write check stays opt-in on mainnet, under
+  `mainnet-synthetic-write`. See `docs/RUNBOOK.md` "Uptime monitoring" for the
+  owner procedure to create `UPTIME_MAINNET_API_KEY`.
 - Cash-out is claimed atomically so concurrent requests cannot start two
   withdrawals, and overlapping poll ticks no longer fire duplicate webhooks.
 - Link amounts of zero or out of range are rejected; trustline limits are
