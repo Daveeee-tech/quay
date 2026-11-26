@@ -382,6 +382,10 @@ export const env = {
   // Pay options whose full-amount price is more than this many basis points
   // worse than a 1% quote are hidden as too thin (issue #547). Default 300.
   pathPaymentsMaxPriceImpactBps: num("PATH_PAYMENTS_MAX_PRICE_IMPACT_BPS", 300),
+  // Refunds (issues 4.58–4.62). Off until the refund flow is complete: with it
+  // off the refund routes answer 501 refunds_disabled. Only the exact string
+  // "true" turns it on.
+  refundsEnabled: process.env.REFUNDS_ENABLED === "true",
 } as const;
 
 // A production process with the e2e backdoors mounted would accept

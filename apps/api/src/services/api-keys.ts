@@ -39,13 +39,17 @@ export const ALL_SCOPES = [
   "webhooks:manage",
   "api-keys:manage",
   "offramp:initiate",
+  // Sending a seller's money back to a buyer (issue 4.60). Opt-in like
+  // offramp:initiate: it relays a transaction out of the seller's wallet.
+  "refunds:initiate",
 ] as const;
 
 export type ApiKeyScope = (typeof ALL_SCOPES)[number];
 
 /**
- * Default scopes when the caller does not specify any. offramp:initiate
- * (moves money) and api-keys:manage (mints more keys) are both opt-in.
+ * Default scopes when the caller does not specify any. offramp:initiate and
+ * refunds:initiate (both move money) and api-keys:manage (mints more keys) are
+ * all opt-in.
  */
 export const DEFAULT_SCOPES: ApiKeyScope[] = ["links:read", "links:write", "webhooks:manage"];
 

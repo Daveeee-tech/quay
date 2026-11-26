@@ -443,3 +443,33 @@ describe("GET /links/:id/cash-out/transfer — non-custodial transfer instructio
     expect(((await res.json()) as Record<string, unknown>).error).toBe(message);
   });
 });
+
+describe("POST /links/:id/refunds/:refundId/submit", () => {
+  // The whole refund flow is behind REFUNDS_ENABLED (issues 4.58–4.62). Off is
+  // a permanent property of the deployment, so it answers 501 (not the 502 an
+  // outage gets) and a client stops retrying; the API test env leaves it unset.
+  it("answers 501 refunds_disabled while refunds are off", async () => {
+    const container = fakeContainer();
+    const app = linkRoutes(container, async (_c, next) => next());
+    const token = await tokenFor(container.auth.session, owner.id);
+
+    const res = await app.request(`/${ownedLink.id}/refunds/rfd_1/submit`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ signedXdr: "AAAA" }),
+    });
+
+    expect(res.status).toBe(501);
+    expect(((await res.json()) as Record<string, unknown>).error).toBe("refunds_disabled");
+  });
+
+  it("rejects with 401 when no token is provided", async () => {
+    const app = linkRoutes(fakeContainer(), async (_c, next) => next());
+    const res = await app.request(`/${ownedLink.id}/refunds/rfd_1/submit`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ signedXdr: "AAAA" }),
+    });
+    expect(res.status).toBe(401);
+  });
+});

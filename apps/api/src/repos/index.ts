@@ -388,6 +388,7 @@ function rowToRefund(row: typeof refunds.$inferSelect): Refund {
     amount: row.amount,
     asset: { code: row.assetCode, issuer: row.assetIssuer ?? null },
     status: row.status as RefundStatus,
+    unsignedTxHash: row.unsignedTxHash ?? null,
     txHash: row.txHash ?? null,
     failureReason: row.failureReason ?? null,
     createdAt: row.createdAt,
@@ -414,6 +415,7 @@ export class DrizzleRefundRepository implements RefundRepository {
       assetCode: refund.asset.code,
       assetIssuer: refund.asset.issuer,
       status: refund.status,
+      unsignedTxHash: refund.unsignedTxHash,
       txHash: refund.txHash,
       failureReason: refund.failureReason,
       createdAt: refund.createdAt,
@@ -456,6 +458,7 @@ export class DrizzleRefundRepository implements RefundRepository {
   async update(id: string, patch: RefundPatch): Promise<Refund | null> {
     const set: Partial<typeof refunds.$inferInsert> = { updatedAt: Date.now() };
     if (patch.status !== undefined) set.status = patch.status;
+    if (patch.unsignedTxHash !== undefined) set.unsignedTxHash = patch.unsignedTxHash;
     if (patch.txHash !== undefined) set.txHash = patch.txHash;
     if (patch.failureReason !== undefined) set.failureReason = patch.failureReason;
     await this.db.update(refunds).set(set).where(eq(refunds.id, id));

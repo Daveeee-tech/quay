@@ -347,6 +347,7 @@ export async function createContainer(): Promise<Container> {
     sellers: sellersRepo,
     webhooks: webhooksRepo,
     rail,
+    refunds: refundsRepo,
     offramp,
     offrampState: offrampStateRepo,
     kyc,
