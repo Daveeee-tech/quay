@@ -1,4 +1,5 @@
 import type {
+  AssetRef,
   KycFieldSpec,
   KycStatus,
   OffRampQuote,
@@ -15,6 +16,28 @@ export interface LinkWithRequest {
   request: PaymentRequest;
   /** Paying in any asset (issue 8.30). Optional so older API responses still parse. */
   pay?: { pathPayments: boolean; maxSlippageBps: number };
+}
+
+/** One way to pay a link's outstanding amount with another asset (issue 4.64). */
+export interface PayOption {
+  sourceAsset: AssetRef;
+  /** What the path costs right now, in `sourceAsset`. */
+  sourceAmount: string;
+  /** The most the buyer agrees to spend: `sourceAmount` plus the allowed slippage. */
+  sendMax: string;
+  /** Assets traded through between source and destination, in order. */
+  path: AssetRef[];
+  /** Epoch milliseconds. The quote stands until `expiresAt`. */
+  quotedAt: number;
+  expiresAt: number;
+}
+
+/** `GET /links/:id/pay-options`: what an account can pay a link with (issue 4.64). */
+export interface PayOptions {
+  linkAsset: AssetRef;
+  /** The link's outstanding amount, which every option delivers. */
+  amount: string;
+  options: PayOption[];
 }
 
 /** One SEP-6 withdrawal type and the payout fields it needs (issue 5.24). */
@@ -609,6 +632,10 @@ export const api = {
   listLinks: () => http<{ links: PaymentLink[] }>("/links"),
 
   getLink: (id: string) => http<LinkWithRequest>(`/links/${id}`),
+
+  /** Which assets this account can pay the link with, and how much of each (issue 4.64). */
+  getPayOptions: (id: string, account: string) =>
+    http<PayOptions>(`/links/${id}/pay-options?account=${encodeURIComponent(account)}`),
 
   submitPayment: (id: string, signedXdr: string) =>
     http<{ txHash: string }>(`/links/${id}/submit`, {
